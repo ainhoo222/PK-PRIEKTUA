@@ -78,6 +78,23 @@ def login():
 
     return jsonify({'token': token, 'role': user.role}), 200
 
+@app.route('/profile', methods=['GET'])
+def get_profile():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({'message': 'Token falta'}), 401
+    try:
+        data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        user_id = data['user_id']
+        if user_id == 0:  # Admin
+            return jsonify({'username': 'Admin', 'email': 'admin@streamix.com', 'role': 'admin'}), 200
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'message': 'Erabiltzailea ez da aurkitu'}), 404
+        return jsonify({'username': user.username, 'email': user.email, 'role': user.role}), 200
+    except:
+        return jsonify({'message': 'Token baliogabea'}), 401
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
