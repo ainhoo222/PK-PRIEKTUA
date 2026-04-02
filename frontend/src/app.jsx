@@ -7,8 +7,7 @@ function App() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    password: '',
-    role: 'user'
+    password: ''
   })
   const [message, setMessage] = useState('')
   const [token, setToken] = useState(localStorage.getItem('token') || '')
@@ -22,9 +21,9 @@ function App() {
     e.preventDefault()
     try {
       const response = await axios.post('http://localhost:5000/register', formData)
-      setMessage(response.data.message)
+      setMessage('Erabiltzailea ongi erregistratu da')
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Error registering')
+      setMessage(error.response?.data?.message || 'Errorea erregistratzean')
     }
   }
 
@@ -39,9 +38,10 @@ function App() {
       setRole(response.data.role)
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('role', response.data.role)
-      setMessage(`Logged in as ${response.data.role}`)
+      const roleText = response.data.role === 'user' ? 'Erabiltzaile' : 'Administratzaile'
+      setMessage(`${roleText} gisa hasi duzu saioa`)
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Error logging in')
+      setMessage(error.response?.data?.message || 'Errorea saioa hastean')
     }
   }
 
@@ -50,15 +50,17 @@ function App() {
     setRole('')
     localStorage.removeItem('token')
     localStorage.removeItem('role')
-    setMessage('Logged out')
+    setMessage('Saioa amaitu da')
   }
 
   if (token) {
     return (
       <div className="app">
-        <h1>Streamix</h1>
-        <p>Welcome! You are logged in as {role}.</p>
-        <button onClick={handleLogout}>Logout</button>
+        <img src="/Streamix logo.png" alt="Streamix Logo" className="logo" />
+        <div className="welcome">
+          <p>Ongi etorri! {role === 'user' ? 'Erabiltzaile' : 'Administratzaile'} gisa hasi duzu saioa.</p>
+        </div>
+        <button className="logout-btn" onClick={handleLogout}>Saioa amaitu</button>
         {/* Here add movie list or admin panel */}
       </div>
     )
@@ -66,27 +68,23 @@ function App() {
 
   return (
     <div className="app">
-      <h1>Streamix</h1>
+      <img src="/Streamix logo.png" alt="Streamix Logo" className="logo" />
       <div className="tabs">
-        <button onClick={() => setIsRegister(false)} className={!isRegister ? 'active' : ''}>Login</button>
-        <button onClick={() => setIsRegister(true)} className={isRegister ? 'active' : ''}>Register</button>
+        <button onClick={() => setIsRegister(false)} className={!isRegister ? 'active' : ''}>Saioa hasi</button>
+        <button onClick={() => setIsRegister(true)} className={isRegister ? 'active' : ''}>Erregistratu</button>
       </div>
       {isRegister ? (
         <form onSubmit={handleRegister}>
-          <input type="text" name="username" placeholder="Username" value={formData.username} onChange={handleChange} required />
-          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
-          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
-          <select name="role" value={formData.role} onChange={handleChange}>
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button type="submit">Register</button>
+          <input type="text" name="username" placeholder="Erabiltzaile-izena" value={formData.username} onChange={handleChange} required />
+          <input type="email" name="email" placeholder="Helbide elektronikoa" value={formData.email} onChange={handleChange} required />
+          <input type="password" name="password" placeholder="Pasahitza" value={formData.password} onChange={handleChange} required />
+          <button type="submit">Erregistratu</button>
         </form>
       ) : (
         <form onSubmit={handleLogin}>
-          <input type="text" name="username" placeholder="Username" value={formData.username} onChange={handleChange} required />
-          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required />
-          <button type="submit">Login</button>
+          <input type="text" name="username" placeholder="Erabiltzaile-izena" value={formData.username} onChange={handleChange} required />
+          <input type="password" name="password" placeholder="Pasahitza" value={formData.password} onChange={handleChange} required />
+          <button type="submit">Saioa hasi</button>
         </form>
       )}
       {message && <p>{message}</p>}

@@ -1,51 +1,162 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #D8BFD8 0%, #ADD8E6 50%, #000080 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
 .app {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: Arial, sans-serif;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 1s ease-in-out;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.app h1 {
+  color: #000080;
+  font-size: 2.5em;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.logo {
+  width: 150px;
+  height: auto;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.app h1::after {
+  content: '🎬';
+  position: absolute;
+  top: -10px;
+  right: -30px;
+  font-size: 1.5em;
 }
 
 .tabs {
   display: flex;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .tabs button {
   flex: 1;
-  padding: 10px;
+  padding: 15px;
   border: none;
-  background: #f0f0f0;
+  background: #ADD8E6;
+  color: #000080;
   cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
 .tabs button.active {
-  background: #007bff;
+  background: #000080;
   color: white;
+  transform: translateY(-2px);
+}
+
+.tabs button:hover {
+  background: #87CEEB;
 }
 
 form {
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
-input, select, button {
-  margin-bottom: 10px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+input {
+  padding: 15px;
+  border: 2px solid #D8BFD8;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
 }
 
-button {
-  background: #007bff;
+input:focus {
+  outline: none;
+  border-color: #000080;
+  box-shadow: 0 0 10px rgba(0, 0, 128, 0.3);
+  background: white;
+}
+
+input::placeholder {
+  color: #666;
+}
+
+button[type="submit"] {
+  background: linear-gradient(45deg, #000080, #ADD8E6);
   color: white;
   border: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-button:hover {
-  background: #0056b3;
+button[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+button[type="submit"]:active {
+  transform: translateY(0);
 }
 
 p {
-  color: red;
+  color: #000080;
+  font-weight: bold;
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: 5px;
+  background: rgba(173, 216, 230, 0.5);
+}
+
+.welcome {
+  background: linear-gradient(45deg, #D8BFD8, #ADD8E6);
+  color: #000080;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.logout-btn {
+  background: #000080;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #0000CD;
 }

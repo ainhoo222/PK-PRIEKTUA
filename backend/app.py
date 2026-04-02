@@ -33,20 +33,20 @@ def register():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role', 'user')  # Default to user
+    role = 'user'  # Always user
 
     if not username or not email or not password:
-        return jsonify({'message': 'Missing fields'}), 400
+        return jsonify({'message': 'Eremuak falta dira'}), 400
 
     if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({'message': 'User already exists'}), 400
+        return jsonify({'message': 'Erabiltzailea dagoeneko existitzen da'}), 400
 
     hashed_password = generate_password_hash(password)
     new_user = User(username=username, email=email, password_hash=hashed_password, role=role)
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({'message': 'User registered successfully'}), 201
+    return jsonify({'message': 'Erabiltzailea ongi erregistratu da'}), 201
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -55,11 +55,20 @@ def login():
     password = data.get('password')
 
     if not username or not password:
-        return jsonify({'message': 'Missing fields'}), 400
+        return jsonify({'message': 'Eremuak falta dira'}), 400
+
+    # Check for default admin login
+    if username == 'Admin' and password == 'Admin':
+        token = jwt.encode({
+            'user_id': 0,  # Special ID for admin
+            'role': 'admin',
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'token': token, 'role': 'admin'}), 200
 
     user = User.query.filter_by(username=username).first()
     if not user or not check_password_hash(user.password_hash, password):
-        return jsonify({'message': 'Invalid credentials'}), 401
+        return jsonify({'message': 'Kredentzialak baliogabeak'}), 401
 
     token = jwt.encode({
         'user_id': user.id,
