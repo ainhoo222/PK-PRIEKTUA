@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 CORS(app)
 
-app.config['SECRET_KEY'] = 'your_secret_key_here'  # Change this in production
+app.config['SECRET_KEY'] = 'your_secret_key_here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///streamix.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -19,81 +19,102 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    role = db.Column(db.String(20), default='user')  # 'user' or 'admin'
+    role = db.Column(db.String(20), default='user')
 
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    # Add more fields as needed
+
+class Favorite(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'), nullable=False)
 
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    role = 'user'  # Always user
-
-    if not username or not email or not password:
-        return jsonify({'message': 'Eremuak falta dira'}), 400
-
-    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({'message': 'Erabiltzailea dagoeneko existitzen da'}), 400
-
-    hashed_password = generate_password_hash(password)
-    new_user = User(username=username, email=email, password_hash=hashed_password, role=role)
+    if User.query.filter_by(username=data.get('username')).first():
+        return jsonify({'message': 'Erabiltzailea existitzen da'}), 400
+    hashed = generate_password_hash(data.get('password'))
+    new_user = User(username=data.get('username'), email=data.get('email'), password_hash=hashed)
     db.session.add(new_user)
     db.session.commit()
-
-    return jsonify({'message': 'Erabiltzailea ongi erregistratu da'}), 201
+    return jsonify({'message': 'Erregistratua'}), 201
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if not username or not password:
-        return jsonify({'message': 'Eremuak falta dira'}), 400
-
-    # Check for default admin login
-    if username == 'Admin' and password == 'Admin':
-        token = jwt.encode({
-            'user_id': 0,  # Special ID for admin
-            'role': 'admin',
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
-        }, app.config['SECRET_KEY'], algorithm='HS256')
+    if data.get('username') == 'Admin' and data.get('password') == 'Admin':
+        token = jwt.encode({'user_id': 0, 'role': 'admin', 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)}, app.config['SECRET_KEY'], algorithm='HS256')
         return jsonify({'token': token, 'role': 'admin'}), 200
-
-    user = User.query.filter_by(username=username).first()
-    if not user or not check_password_hash(user.password_hash, password):
-        return jsonify({'message': 'Kredentzialak baliogabeak'}), 401
-
-    token = jwt.encode({
-        'user_id': user.id,
-        'role': user.role,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
-    }, app.config['SECRET_KEY'], algorithm='HS256')
-
-    return jsonify({'token': token, 'role': user.role}), 200
+    user = User.query.filter_by(username=data.get('username')).first()
+    if user and check_password_hash(user.password_hash, data.get('password')):
+        token = jwt.encode({'user_id': user.id, 'role': user.role, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)}, app.config['SECRET_KEY'], algorithm='HS256')
+        return jsonify({'token': token, 'role': user.role}), 200
+    return jsonify({'message': 'Kredentzial okerrak'}), 401
 
 @app.route('/profile', methods=['GET'])
 def get_profile():
     token = request.headers.get('Authorization')
-    if not token:
-        return jsonify({'message': 'Token falta'}), 401
     try:
         data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-        user_id = data['user_id']
-        if user_id == 0:  # Admin
-            return jsonify({'username': 'Admin', 'email': 'admin@streamix.com', 'role': 'admin'}), 200
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'message': 'Erabiltzailea ez da aurkitu'}), 404
-        return jsonify({'username': user.username, 'email': user.email, 'role': user.role}), 200
+        if data['user_id'] == 0:
+            return jsonify({'username': 'Admin', 'role': 'admin'}), 200
+        user = User.query.get(data['user_id'])
+        return jsonify({'username': user.username, 'role': user.role}), 200
     except:
-        return jsonify({'message': 'Token baliogabea'}), 401
+        return jsonify({'message': 'Token okerra'}), 401
+
+@app.route('/api/movies', methods=['GET', 'POST'])
+def handle_movies():
+    if request.method == 'POST':
+        data = request.get_json()
+        new_movie = Movie(title=data['title'], description=data.get('description', ''))
+        db.session.add(new_movie)
+        db.session.commit()
+        return jsonify({'message': 'Gordeta'}), 201
+    movies = Movie.query.all()
+    return jsonify([{'id': m.id, 'title': m.title, 'description': m.description} for m in movies])
+
+@app.route('/api/movies/<int:id>', methods=['DELETE'])
+def delete_movie(id):
+    movie = Movie.query.get(id)
+    if movie:
+        Favorite.query.filter_by(movie_id=id).delete()
+        db.session.delete(movie)
+        db.session.commit()
+    return jsonify({'message': 'Ezabatua'}), 200
+
+@app.route('/api/favorites', methods=['GET', 'POST'])
+def handle_favorites():
+    token = request.headers.get('Authorization')
+    data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    user_id = data['user_id']
+
+    if request.method == 'POST':
+        movie_id = request.get_json().get('movie_id')
+        exists = Favorite.query.filter_by(user_id=user_id, movie_id=movie_id).first()
+        if not exists:
+            new_fav = Favorite(user_id=user_id, movie_id=movie_id)
+            db.session.add(new_fav)
+            db.session.commit()
+        return jsonify({'message': 'Gogokoetara gehituta'}), 200
+
+    favs = Favorite.query.filter_by(user_id=user_id).all()
+    movie_ids = [f.movie_id for f in favs]
+    movies = Movie.query.filter(Movie.id.in_(movie_ids)).all()
+    return jsonify([{'id': m.id, 'title': m.title, 'description': m.description} for m in movies])
+
+@app.route('/api/favorites/<int:movie_id>', methods=['DELETE'])
+def remove_favorite(movie_id):
+    token = request.headers.get('Authorization')
+    data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    fav = Favorite.query.filter_by(user_id=data['user_id'], movie_id=movie_id).first()
+    if fav:
+        db.session.delete(fav)
+        db.session.commit()
+    return jsonify({'message': 'Gogokoetatik kenduta'}), 200
 
 if __name__ == '__main__':
     with app.app_context():

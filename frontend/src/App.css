@@ -1,3 +1,4 @@
+
 html, body {
   width: 100%;
   height: 100%;
@@ -14,226 +15,244 @@ body {
   background: linear-gradient(135deg, #D8BFD8 0%, #ADD8E6 50%, #000080 100%);
   background-attachment: fixed;
   box-sizing: border-box;
+  color: #333;
 }
+
 
 .app-login {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   padding: 40px;
   max-width: 450px;
-  width: 100%;
+  width: 90%;
   text-align: center;
   backdrop-filter: blur(10px);
-  animation: fadeIn 1s ease-in-out;
+  animation: fadeIn 0.8s ease-out;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
 
-.app-logged {
-  min-height: 100vh;
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(135deg, #D8BFD8 0%, #ADD8E6 50%, #000080 100%);
-  overflow-x: hidden;
-}
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }
 
-.app h1 {
-  color: #000080;
-  font-size: 2.5em;
-  margin-bottom: 30px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-}
 
 .logo {
   width: 150px;
   height: auto;
   margin-bottom: 20px;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.app-logged .logo {
-  margin: 20px auto;
-}
-
-.app h1::after {
-  content: '🎬';
-  position: absolute;
-  top: -10px;
-  right: -30px;
-  font-size: 1.5em;
-}
-
-.tabs {
-  display: flex;
-  margin-bottom: 30px;
-  border-radius: 10px;
-  overflow: hidden;
+  border-radius: 15px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.tabs button {
-  flex: 1;
-  padding: 15px;
-  border: none;
-  background: #ADD8E6;
-  color: #000080;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  position: relative;
+.app-logged .logo {
+  display: block;
+  margin: 20px auto;
 }
 
-.tabs button.active {
-  background: #000080;
-  color: white;
-  transform: translateY(-2px);
-}
-
-.tabs button:hover {
-  background: #87CEEB;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-input {
-  padding: 15px;
-  border: 2px solid #D8BFD8;
-  border-radius: 10px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.8);
-}
-
-input:focus {
-  outline: none;
-  border-color: #000080;
-  box-shadow: 0 0 10px rgba(0, 0, 128, 0.3);
-  background: white;
-}
-
-input::placeholder {
-  color: #666;
-}
-
-button[type="submit"] {
-  background: linear-gradient(45deg, #000080, #ADD8E6);
-  color: white;
-  border: none;
-  padding: 15px;
-  border-radius: 10px;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-button[type="submit"]:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-button[type="submit"]:active {
-  transform: translateY(0);
-}
-
-p {
-  color: #000080;
-  font-weight: bold;
-  margin-top: 20px;
-  padding: 10px;
-  border-radius: 5px;
-  background: rgba(173, 216, 230, 0.5);
-}
 
 .navbar {
   display: flex;
   justify-content: center;
   gap: 20px;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.9);
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .navbar button {
   background: none;
   border: none;
   color: #000080;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  transition: color 0.3s ease;
-  padding: 0;
-}
-
-.navbar button.active {
-  color: #000080;
-  text-decoration: none;
-  font-weight: 900;
+  padding: 8px 15px;
+  border-radius: 5px;
+  transition: all 0.3s ease;
 }
 
 .navbar button:hover {
-  color: #87CEEB;
+  background: #ADD8E6;
+  transform: translateY(-2px);
 }
 
-.content {
-  flex: 1;
-  padding: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  width: 100%;
-  max-width: 100%;
+
+.search-bar {
+  display: block;
+  width: 90%;
+  max-width: 600px;
+  margin: 25px auto;
+  padding: 12px 25px;
+  border: 2px solid #D8BFD8;
+  border-radius: 30px;
+  font-size: 16px;
+  background: white;
+  color: #000080;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
-.profile, .movies, .favorites, .watched {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 20px;
-  border-radius: 0;
-  box-shadow: none;
+.search-bar:focus {
+  outline: none;
+  border-color: #000080;
+  box-shadow: 0 4px 20px rgba(0, 0, 128, 0.2);
+}
+
+
+.admin-box {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 25px;
+  border-radius: 15px;
+  max-width: 600px;
+  margin: 20px auto;
+  border: 2px dashed #000080;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.admin-box input, .admin-box textarea {
   width: 100%;
-  max-width: 100%;
-  margin: 0;
-  text-align: left;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
   box-sizing: border-box;
 }
-.profile h2, .movies h2, .favorites h2, .watched h2 {
-  color: #000080;
-  margin-bottom: 15px;
+
+.admin-box button {
+  width: 100%;
+  background: #000080;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
-.profile p {
-  margin: 10px 0;
-  font-size: 16px;
+.admin-box button:hover {
+  background: #0000CD;
+}
+
+
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+  padding: 30px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+
+.movie-card {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-top: 5px solid #000080;
+}
+
+.movie-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+.movie-card h3 {
+  color: #000080;
+  margin: 0 0 10px 0;
+  font-size: 1.25rem;
+}
+
+.movie-card p {
+  color: #555;
+  font-weight: normal;
+  margin: 0 0 20px 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  background: transparent;
+  padding: 0;
+}
+
+.card-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.fav-add-btn {
+  background: #ADD8E6;
+  color: #000080;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 2;
+  transition: all 0.3s;
+}
+
+.fav-add-btn:hover {
+  background: #000080;
+  color: white;
+}
+
+.delete-btn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.remove-fav-btn {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+}
+
+
+.profile {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 40px;
+  border-radius: 15px;
+  max-width: 500px;
+  margin: 40px auto;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
 .logout-btn {
   background: #000080;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
+  padding: 12px 25px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.3s ease;
-  margin-top: 20px;
+  font-weight: bold;
+  transition: 0.3s;
 }
 
 .logout-btn:hover {
-  background: #0000CD;
+  background: #ff4444;
 }
