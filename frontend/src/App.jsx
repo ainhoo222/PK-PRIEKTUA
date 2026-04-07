@@ -12,8 +12,10 @@ function App() {
   const [userData, setUserData] = useState({})
   const [movies, setMovies] = useState([])
   const [favorites, setFavorites] = useState([])
-  const [newMovie, setNewMovie] = useState({ title: '', description: '' })
+  const [newMovie, setNewMovie] = useState({ title: '', description: '', category_id: '' })
   const [searchTerm, setSearchTerm] = useState('')
+  const [categories, setCategories] = useState([])
+  const [newCategoryName, setNewCategoryName] = useState('')  // Kategoria berria sortzeko
 
   const fetchProfile = async () => {
     try {
@@ -36,9 +38,19 @@ function App() {
     } catch (e) { console.error(e) }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/categories')
+      setCategories(res.data)
+    } catch (e) { console.error('Errorea kategoriak kargatzean', e) }
+  }
+
   useEffect(() => {
     if (token) {
-      fetchProfile(); fetchMovies(); fetchFavorites()
+      fetchProfile()
+      fetchMovies()
+      fetchFavorites()
+      fetchCategories()
     }
   }, [token])
 
@@ -55,8 +67,13 @@ function App() {
   const handleAddMovie = async (e) => {
     e.preventDefault()
     try {
-      await axios.post('http://localhost:5000/api/movies', newMovie)
-      setNewMovie({ title: '', description: '' }); fetchMovies()
+      await axios.post('http://localhost:5000/api/movies', {
+        title: newMovie.title,
+        description: newMovie.description,
+        category_id: newMovie.category_id
+      })
+      setNewMovie({ title: '', description: '', category_id: '' })
+      fetchMovies()
       setMessage('Filma ongi gehitu da!')
     } catch (e) { console.error(e) }
   }
@@ -86,6 +103,32 @@ function App() {
     setToken(''); setRole(''); localStorage.clear(); setCurrentView('profile')
   }
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault()
+    try {
+      await axios.post('http://localhost:5000/api/categories', 
+        { name: newCategoryName },
+        { headers: { Authorization: token } }
+      )
+      setNewCategoryName('')
+      fetchCategories()
+      alert('Kategoria sortu da!')
+    } catch (e) {
+      console.error(e)
+      alert('Errorea kategoria sortzean')
+    }
+  }
+
+  const groupMoviesByCategory = (moviesList) => {
+    const groups = {}
+    moviesList.forEach(movie => {
+      const catName = movie.category?.name || 'Sin categoría'
+      if (!groups[catName]) groups[catName] = []
+      groups[catName].push(movie)
+    })
+    return groups
+  }
+
   if (token) {
     return (
       <div className="app app-logged">
@@ -108,45 +151,84 @@ function App() {
           {currentView === 'movies' && (
             <div className="movies">
               {(role === 'admin') && (
-                <div className="admin-box">
-                  <h3>Gehitu Filma</h3>
-                  <form onSubmit={handleAddMovie}>
-                    <input type="text" placeholder="Izenburua" value={newMovie.title} onChange={(e)=>setNewMovie({...newMovie, title: e.target.value})} required />
-                    <textarea placeholder="Deskribapena" value={newMovie.description} onChange={(e)=>setNewMovie({...newMovie, description: e.target.value})} />
-                    <button type="submit">Gorde</button>
-                  </form>
-                </div>
+                <>
+                  {/* Kategoria sortzeko kutxa */}
+                  <div className="admin-box">
+                    <h3>Sortu kategoria berria</h3>
+                    <form onSubmit={handleAddCategory}>
+                      <input 
+                        type="text" 
+                        placeholder="Kategoria izena" 
+                        value={newCategoryName} 
+                        onChange={(e) => setNewCategoryName(e.target.value)} 
+                        required 
+                      />
+                      <button type="submit">Sortu</button>
+                    </form>
+                  </div>
+
+                  {/* Pelikula gehitzeko kutxa */}
+                  <div className="admin-box">
+                    <h3>Gehitu Filma</h3>
+                    <form onSubmit={handleAddMovie}>
+                      <input type="text" placeholder="Izenburua" value={newMovie.title} onChange={(e)=>setNewMovie({...newMovie, title: e.target.value})} required />
+                      <textarea placeholder="Deskribapena" value={newMovie.description} onChange={(e)=>setNewMovie({...newMovie, description: e.target.value})} />
+                      <select value={newMovie.category_id} onChange={(e)=>setNewMovie({...newMovie, category_id: e.target.value})} required>
+                        <option value="">Hautatu kategoria</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <button type="submit">Gorde</button>
+                    </form>
+                  </div>
+                </>
               )}
+
               <div className="search-container">
                 <input type="text" placeholder="Bilatu pelikula..." onChange={(e)=>setSearchTerm(e.target.value)} className="search-bar" />
               </div>
-              <div className="movies-grid">
-                {movies.filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase())).map(m => (
-                  <div key={m.id} className="movie-card">
-                    <h3>{m.title}</h3>
-                    <p>{m.description}</p>
-                    <div className="card-buttons">
-                      <button onClick={() => handleAddFavorite(m.id)} className="fav-add-btn">⭐ Gogokoa</button>
-                      {role === 'admin' && <button onClick={() => handleDeleteMovie(m.id)} className="delete-btn">Ezabatu</button>}
-                    </div>
+
+              {Object.entries(groupMoviesByCategory(
+                movies.filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase()))
+              )).map(([categoryName, movieList]) => (
+                <div key={categoryName}>
+                  <h2 style={{ marginLeft: '30px', color: '#000080' }}>{categoryName}</h2>
+                  <div className="movies-grid">
+                    {movieList.map(m => (
+                      <div key={m.id} className="movie-card">
+                        <h3>{m.title}</h3>
+                        <p>{m.description}</p>
+                        <div className="card-buttons">
+                          <button onClick={() => handleAddFavorite(m.id)} className="fav-add-btn">⭐ Gogokoa</button>
+                          {role === 'admin' && <button onClick={() => handleDeleteMovie(m.id)} className="delete-btn">Ezabatu</button>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           )}
 
           {currentView === 'favorites' && (
             <div className="favorites">
               <h2>Zure Gogokoenak</h2>
-              <div className="movies-grid">
-                {favorites.length === 0 ? <p>Hutsa... Gehitu pelikulak!</p> : favorites.map(m => (
-                  <div key={m.id} className="movie-card">
-                    <h3>{m.title}</h3>
-                    <p>{m.description}</p>
-                    <button onClick={() => handleRemoveFavorite(m.id)} className="remove-fav-btn">❌ Kendu</button>
+              {Object.entries(groupMoviesByCategory(favorites)).map(([catName, favList]) => (
+                <div key={catName}>
+                  <h3 style={{ marginLeft: '30px', color: '#000080' }}>{catName}</h3>
+                  <div className="movies-grid">
+                    {favList.map(m => (
+                      <div key={m.id} className="movie-card">
+                        <h3>{m.title}</h3>
+                        <p>{m.description}</p>
+                        <button onClick={() => handleRemoveFavorite(m.id)} className="remove-fav-btn">❌ Kendu</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+              {favorites.length === 0 && <p>Hutsa... Gehitu pelikulak!</p>}
             </div>
           )}
         </div>

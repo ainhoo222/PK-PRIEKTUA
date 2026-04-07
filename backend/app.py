@@ -4,6 +4,7 @@ from flask_cors import CORS
 import jwt
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 CORS(app)
@@ -14,6 +15,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+migrate = Migrate(app, db)
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -21,10 +24,16 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), default='user')
 
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
 class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    category = db.relationship('Category', backref='movies')
 
 class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -115,6 +124,29 @@ def remove_favorite(movie_id):
         db.session.delete(fav)
         db.session.commit()
     return jsonify({'message': 'Gogokoetatik kenduta'}), 200
+
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    kategoriak = Category.query.all()
+    return jsonify([{'id': k.id, 'name': k.name} for k in kategoriak])
+    
+@app.route('/api/categories', methods=['POST'])
+def create_category():
+    token = request.headers.get('Authorization')
+    try:
+        data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        if data.get('role') != 'admin':
+            return jsonify({'mezua': 'Admin bakarrik'}), 403
+    except:
+        return jsonify({'mezua': 'Token okerra'}), 401
+
+    cat_data = request.get_json()
+    if not cat_data.get('name'):
+        return jsonify({'mezua': 'Izena beharrezkoa'}), 400
+    kategoria = Category(name=cat_data['name'])
+    db.session.add(kategoria)
+    db.session.commit()
+    return jsonify({'id': kategoria.id, 'name': kategoria.name}), 201
 
 if __name__ == '__main__':
     with app.app_context():
