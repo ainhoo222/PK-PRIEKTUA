@@ -33,6 +33,7 @@ class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
+    poster = db.Column(db.String(500))
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     category = db.relationship('Category', backref='movies')
 
@@ -163,6 +164,7 @@ def handle_movies():
         new_movie = Movie(
             title=data['title'],
             description=data.get('description', ''),
+            poster=data.get('poster', ''),
             category_id=data.get('category_id')
         )
         db.session.add(new_movie)
@@ -179,12 +181,24 @@ def handle_movies():
             'id': m.id,
             'title': m.title,
             'description': m.description,
+            'poster': m.poster,
             'category': {'id': m.category.id, 'name': m.category.name} if m.category else None
         })
     return jsonify(result)
 
-@app.route('/api/movies/<int:id>', methods=['DELETE'])
+@app.route('/api/movies/<int:id>', methods=['DELETE', 'PUT'])
 def delete_movie(id):
+    if request.method == 'PUT':
+        movie = Movie.query.get(id)
+        if not movie:
+            return jsonify({'message': 'Pelikula ez da aurkitzen'}), 404
+        data = request.get_json()
+        movie.title = data.get('title', movie.title)
+        movie.description = data.get('description', movie.description)
+        movie.poster = data.get('poster', movie.poster)
+        # Note: category_id not updated for simplicity, but could be added
+        db.session.commit()
+        return jsonify({'message': 'Eguneratua'}), 200
     movie = Movie.query.get(id)
     if movie:
         Favorite.query.filter_by(movie_id=id).delete()
@@ -264,16 +278,48 @@ def seed_default_movies():
     drama = get_or_create_category('Drama')
     adventure = get_or_create_category('Abentura')
     fantasy = get_or_create_category('Fantasia')
+    comedy = get_or_create_category('Komedia')
+    animation = get_or_create_category('Animazioa')
+    crime = get_or_create_category('Krimen')
+    thriller = get_or_create_category('Thriller')
+    romance = get_or_create_category('Romantzia')
+    horror = get_or_create_category('Horror')
+    music = get_or_create_category('Musika')
 
     default_movies = [
-        {'title': 'Gladiator', 'description': 'Gladiatzaile bati buruzko film epikoa antzinako Erroman.', 'category_id': action.id},
-        {'title': 'Interstellar', 'description': 'Espazio-bidaia eta denborazko sakontasunak deskubritzen dituen zientzia-fikzio filma.', 'category_id': scifi.id},
-        {'title': 'Inception', 'description': 'Ametsak manipulatu eta errealitatea zalantzan jartzen duen thriller psikologikoa.', 'category_id': scifi.id},
-        {'title': 'The Matrix', 'description': 'Erlaitzaren aurrealdeari eta sistema faltsu bati buruzko zientzia-fikzio klasikoa.', 'category_id': scifi.id},
-        {'title': 'The Dark Knight', 'description': 'Batman eta Jokerren arteko ospea eta drama.' , 'category_id': action.id},
-        {'title': 'The Lord of the Rings', 'description': 'Fantasia-epika mundu magiko batean, abentura handia.', 'category_id': fantasy.id},
-        {'title': 'Parasite', 'description': 'Klase sozialen arteko tentsioa eta umorea beltza uztartzen dituen drama.', 'category_id': drama.id},
-        {'title': 'Indiana Jones', 'description': 'Abentura klasikoa altxorra aurkitzeari eta arriskuari buruz.', 'category_id': adventure.id}
+        {'title': 'Gladiator', 'description': 'Gladiatzaile bati buruzko film epikoa antzinako Erroman.', 'category_id': action.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/8/8d/Gladiator_ver1.jpg'},
+        {'title': 'Interstellar', 'description': 'Espazio-bidaia eta denborazko sakontasunak deskubritzen dituen zientzia-fikzio filma.', 'category_id': scifi.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/b/bc/Interstellar_film_poster.jpg'},
+        {'title': 'Inception', 'description': 'Ametsak manipulatu eta errealitatea zalantzan jartzen duen thriller psikologikoa.', 'category_id': scifi.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/7/7f/Inception_ver3.jpg'},
+        {'title': 'The Matrix', 'description': 'Erlaitzaren aurrealdeari eta sistema faltsu bati buruzko zientzia-fikzio klasikoa.', 'category_id': scifi.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/c/c1/The_Matrix_Poster.jpg'},
+        {'title': 'The Dark Knight', 'description': 'Batman eta Jokerren arteko ospea eta drama.' , 'category_id': action.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/8/8a/Dark_Knight.jpg'},
+        {'title': 'The Lord of the Rings', 'description': 'Fantasia-epika mundu magiko batean, abentura handia.', 'category_id': fantasy.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/8/87/Ringstrilogy.jpg'},
+        {'title': 'Parasite', 'description': 'Klase sozialen arteko tentsioa eta umorea beltza uztartzen dituen drama.', 'category_id': drama.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/5/53/Parasite_%282019_film%29.png'},
+        {'title': 'Indiana Jones', 'description': 'Abentura klasikoa altxorra aurkitzeari eta arriskuari buruz.', 'category_id': adventure.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/a/a0/Raiders_of_the_Lost_Ark_poster.jpg'},
+        {'title': 'The Shawshank Redemption', 'description': 'Esperantza eta askatasuna bilatzen duen kartzela-drama harrigarria.', 'category_id': drama.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/8/81/ShawshankRedemptionMoviePoster.jpg'},
+        {'title': 'Forrest Gump', 'description': 'Mundu modernoaren historia ikuspegi xume eta bihotzez inguruan.', 'category_id': drama.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/6/67/Forrest_Gump_poster.jpg'},
+        {'title': 'The Godfather', 'description': 'Mafia-familia boteretsu baten boterea eta leialtasuna aztertzen duen klasikoa.', 'category_id': crime.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/1/1c/Godfather_ver1.jpg'},
+        {'title': 'Pulp Fiction', 'description': 'Krimen-ezohiko hurbilpena eta hizkera berezia lotzen dituen filma.', 'category_id': crime.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/3/3b/Pulp_Fiction_%281994%29_poster.jpg'},
+        {'title': 'The Silence of the Lambs', 'description': 'Polizia ikerketa ilun bat eta psikopata baten arteko tentsioa.', 'category_id': thriller.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/8/86/The_Silence_of_the_Lambs_poster.jpg'},
+        {'title': 'The Prestige', 'description': 'Bi magia-maisuen arteko lehia ezezagun eta trikimailu betean.', 'category_id': drama.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/d/d2/Prestige_poster.jpg'},
+        {'title': 'Avatar', 'description': 'Mundu alienigenaren eta gizateriaren arteko borroka ikusgarria.', 'category_id': fantasy.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/b/b0/Avatar-Teaser-Poster.jpg'},
+        {'title': 'The Lion King', 'description': 'Animazio epikoa familia, koroa eta nortasuna aztertzen duena.', 'category_id': animation.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/3/3d/The_Lion_King_poster.jpg'},
+        {'title': 'Spirited Away', 'description': 'Japoniako animazio magia eta txikien bidaia liluragarria.', 'category_id': animation.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/3/32/Spirited_Away_poster.JPG'},
+        {'title': 'Back to the Future', 'description': 'Denboran atzera bidaia dibertigarria eta arriskuak dakartzan abentura.', 'category_id': scifi.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/d/d2/Back_to_the_Future.jpg'},
+        {'title': 'Mad Max: Fury Road', 'description': 'Aurrekaririk gabea den post-apokaliptiko akzio-bidaia.', 'category_id': action.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/6/6e/Mad_Max_Fury_Road.jpg'},
+        {'title': 'The Departed', 'description': 'Polizia eta mafiosoen artean zurien eta beltzen joko latza.', 'category_id': crime.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/5/50/Departed234.jpg'},
+        {'title': 'The Grand Budapest Hotel', 'description': 'Komedia dotorea, bidaia eta misterio artean murgiltzen den istorioa.', 'category_id': comedy.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/a/a6/The_Grand_Budapest_Hotel_Poster.jpg'},
+        {'title': 'La La Land', 'description': 'Musika, ametsak eta maitasuna Los Angeleseko eszena batean.', 'category_id': music.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/a/ab/La_La_Land_%28film%29.png'},
+        {'title': 'Get Out', 'description': 'Horror sozial bortitza eta tentsio mentala uztartzen duen filma.', 'category_id': horror.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/e/eb/Get_Out_poster.png'},
+        {'title': 'The Truman Show', 'description': 'Errealitate simulatu eta norberaren identitatea aztertzen duen zientzia-fikzioa.', 'category_id': scifi.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/c/cd/The_Truman_Show.jpg'},
+        {'title': 'Blade Runner 2049', 'description': 'Etorkizun distopikoa eta gizakiaren zentzua arakatzen duen sekuela.', 'category_id': scifi.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/9/9b/Blade_Runner_2049_poster.png'},
+        {'title': 'The Social Network', 'description': 'Sare sozialen sorrera eta boterearen garestia kontatzen duen drama.', 'category_id': drama.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/7/7c/Social_network_film_poster.jpg'},
+        {'title': 'Jurassic Park', 'description': 'Dinosaurioen berpizkundea eta abentura izango dituen parkean.', 'category_id': adventure.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/e/e7/Jurassic_Park_poster.jpg'},
+        {'title': 'The Avengers', 'description': 'Superheroi taldeak unibertsoa salbatzeko elkartzen diren akziozko apustua.', 'category_id': action.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/f/f9/TheAvengers2012Poster.jpg'},
+        {'title': 'Toy Story', 'description': 'Jostailuek beren bizitza duela sinesten duten bihotzezko animazioa.', 'category_id': animation.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/1/13/Toy_Story.jpg'},
+        {'title': 'Guardians of the Galaxy', 'description': 'Espazio akzioa eta umorea elkartzen dituen talde bizia.', 'category_id': action.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/b/b5/Guardians_of_the_Galaxy_poster.jpg'},
+        {'title': 'Black Panther', 'description': 'Erritmoak, kultura eta akzio modernoaren arteko ondoan egindako superheroi filma.', 'category_id': action.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/0/0c/Black_Panther_film_poster.jpg'},
+        {'title': 'Titanic', 'description': 'Urperatzearen eta maitasunik gabeko kontakizun dramatikoa.', 'category_id': romance.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/2/22/Titanic_poster.jpg'},
+        {'title': 'The Wizard of Oz', 'description': 'Fantasia klasikoa non ausardia, bihotza eta burujabetza aurkitzen diren.', 'category_id': fantasy.id, 'poster': 'https://upload.wikimedia.org/wikipedia/en/c/c9/The_Wizard_of_Oz_1939_poster.jpg'}
     ]
 
     existing_titles = {m.title for m in Movie.query.all()}

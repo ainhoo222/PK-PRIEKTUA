@@ -498,6 +498,16 @@ body {
 }
 
 .close-preview-btn {
+  margin-top: 20px;
+  background: #ff4757;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
   margin-top: 24px;
   background: #ff5f5f;
   color: white;
@@ -523,7 +533,13 @@ body {
   color: #000080;
   margin: 0 0 8px 0;
   font-size: 1.2rem;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
+
 
 .movie-category {
   color: #555;
@@ -634,6 +650,122 @@ body {
   cursor: pointer;
 }
 
+.edit-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.edit-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.edit-box {
+  position: relative;
+  background: #111;
+  border: 2px solid #333;
+  border-radius: 22px;
+  padding: 28px;
+  width: min(90%, 500px);
+  max-width: 500px;
+  text-align: center;
+  color: #fff;
+  z-index: 1;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.55);
+}
+
+.edit-box h2 {
+  margin: 0 0 20px;
+  font-size: 2rem;
+}
+
+.edit-box .form-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.edit-box label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.edit-box input,
+.edit-box textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
+}
+
+.edit-box textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.edit-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.save-btn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.save-btn:hover {
+  background: #45a049;
+}
+
+.cancel-btn {
+  background: #ff4757;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.cancel-btn:hover {
+  background: #ff3742;
+}
+
+.edit-btn {
+  background: #ffa500;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-right: 5px;
+}
+
+.edit-btn:hover {
+  background: #ff8c00;
+}
+
+.admin-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
 
 .profile-container {
   padding: 40px 20px;

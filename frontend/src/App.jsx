@@ -19,19 +19,10 @@ function App() {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [editFormData, setEditFormData] = useState({ username: '', email: '', password: '', avatar: '' })
   const [profileMessage, setProfileMessage] = useState('')
+  const [editingMovie, setEditingMovie] = useState(null)
+  const [editMovieForm, setEditMovieForm] = useState({ title: '', description: '', poster: '' })
   
   const AVATAR_OPTIONS = ['👤', '😊', '😎', '🎨', '📚', '⭐', '🎭', '🚀', '💻', '🎮', '🏆', '🌟']
-
-  const posterUrls = {
-    'Gladiator': 'https://upload.wikimedia.org/wikipedia/en/8/8d/Gladiator_ver1.jpg',
-    'Interstellar': 'https://upload.wikimedia.org/wikipedia/en/b/bc/Interstellar_film_poster.jpg',
-    'Inception': 'https://upload.wikimedia.org/wikipedia/en/7/7f/Inception_ver3.jpg',
-    'The Matrix': 'https://upload.wikimedia.org/wikipedia/en/c/c1/The_Matrix_Poster.jpg',
-    'The Dark Knight': 'https://upload.wikimedia.org/wikipedia/en/8/8a/Dark_Knight.jpg',
-    'The Lord of the Rings': 'https://upload.wikimedia.org/wikipedia/en/8/87/Ringstrilogy.jpg',
-    'Parasite': 'https://upload.wikimedia.org/wikipedia/en/5/53/Parasite_%282019_film%29.png',
-    'Indiana Jones': 'https://upload.wikimedia.org/wikipedia/en/a/a0/Raiders_of_the_Lost_Ark_poster.jpg'
-  }
 
   const getFallbackPoster = (title) => {
     const svg = `
@@ -52,7 +43,7 @@ function App() {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
   }
 
-  const getMoviePoster = (title) => posterUrls[title] || getFallbackPoster(title)
+  const getMoviePoster = (movie) => movie.poster || getFallbackPoster(movie.title)
   const isFavoriteMovie = (movieId) => favorites.some(fav => fav.id === movieId)
   const [previewMovie, setPreviewMovie] = useState(null)
 
@@ -148,6 +139,27 @@ function App() {
       await axios.delete(`http://localhost:5000/api/movies/${id}`)
       fetchMovies(); fetchFavorites()
     }
+  }
+
+  const handleEditMovie = (movie) => {
+    setEditingMovie(movie)
+    setEditMovieForm({ title: movie.title, description: movie.description, poster: movie.poster || '' })
+  }
+
+  const handleSaveEditMovie = async () => {
+    try {
+      await axios.put(`http://localhost:5000/api/movies/${editingMovie.id}`, editMovieForm)
+      setEditingMovie(null)
+      fetchMovies()
+      alert("Pelikula eguneratua!")
+    } catch (e) {
+      console.error(e)
+      alert("Errorea eguneratzean")
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingMovie(null)
   }
 
   const handleAddFavorite = async (movieId) => {
@@ -300,17 +312,6 @@ function App() {
                       <label>Emaila:</label>
                       <p>{userData.email}</p>
                     </div>
-
-                    <button 
-                      onClick={() => {
-                        setIsEditingProfile(true)
-                        setEditFormData({ username: userData.username, email: userData.email, password: '', avatar: userData.avatar || '👤' })
-                        setProfileMessage('')
-                      }}
-                      className="edit-btn"
-                    >
-                      ✏️ Editatu Profila
-                    </button>
                   </div>
                 ) : (
                   <form onSubmit={handleUpdateProfile} className="profile-edit">
@@ -377,6 +378,17 @@ function App() {
                   </form>
                 )}
 
+                <button 
+                  onClick={() => {
+                    setIsEditingProfile(true)
+                    setEditFormData({ username: userData.username, email: userData.email, password: '', avatar: userData.avatar || '👤' })
+                    setProfileMessage('')
+                  }}
+                  className="edit-btn"
+                >
+                  ✏️ Editatu Profila
+                </button>
+
                 <button onClick={handleLogout} className="logout-btn">🚪 Saioa amaitu</button>
               </div>
             </div>
@@ -438,7 +450,7 @@ function App() {
                           <div key={m.id} className="movie-card">
                             <div className="movie-poster">
                               <img
-                                src={getMoviePoster(m.title)}
+                              src={getMoviePoster(m)}
                                 alt={`${m.title} poster`}
                                 onError={(e) => {
                                   e.target.onerror = null
@@ -470,7 +482,10 @@ function App() {
                               <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
                             </div>
                             {role === 'admin' && (
-                              <button onClick={() => handleDeleteMovie(m.id)} className="delete-btn">Ezabatu</button>
+                              <div className="admin-buttons">
+                                <button onClick={() => handleEditMovie(m)} className="edit-btn">Editatu</button>
+                                <button onClick={() => handleDeleteMovie(m.id)} className="delete-btn">Ezabatu</button>
+                              </div>
                             )}
                           </div>
                         ))}
@@ -498,6 +513,46 @@ function App() {
               </div>
             </div>
           )}
+
+          {editingMovie && (
+            <div className="edit-modal" role="dialog" aria-modal="true">
+              <div className="edit-backdrop" onClick={handleCancelEdit}></div>
+              <div className="edit-box">
+                <h2>Editatu Pelikula</h2>
+                <form onSubmit={(e) => { e.preventDefault(); handleSaveEditMovie(); }}>
+                  <div className="form-group">
+                    <label>Izenburua:</label>
+                    <input
+                      type="text"
+                      value={editMovieForm.title}
+                      onChange={(e) => setEditMovieForm({ ...editMovieForm, title: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Deskribapena:</label>
+                    <textarea
+                      value={editMovieForm.description}
+                      onChange={(e) => setEditMovieForm({ ...editMovieForm, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Poster URLa:</label>
+                    <input
+                      type="url"
+                      value={editMovieForm.poster}
+                      onChange={(e) => setEditMovieForm({ ...editMovieForm, poster: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div className="edit-buttons">
+                    <button type="submit" className="save-btn">Gorde</button>
+                    <button type="button" onClick={handleCancelEdit} className="cancel-btn">Utzi</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
           {currentView === 'favorites' && (
             <div className="favorites">
               <h2>Zure Gogokoenak</h2>
@@ -509,7 +564,7 @@ function App() {
                       <div key={m.id} className="movie-card">
                         <div className="movie-poster">
                           <img
-                            src={getMoviePoster(m.title)}
+                          src={getMoviePoster(m)}
                             alt={`${m.title} poster`}
                             onError={(e) => {
                               e.target.onerror = null
