@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.insert(0, os.getcwd())
-from app import app, db
+from app import app, db, Comment
 
 # Clear any existing models
 db.metadata.clear()

@@ -44,11 +44,20 @@ class Movie(db.Model):
     duration = db.Column(db.Integer, nullable=True)  # Opcional
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     category = db.relationship('Category', backref='movies')
+    comments = db.relationship('Comment', backref='movie', cascade='all, delete-orphan')
 
 class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'), nullable=False)
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'), nullable=False)
+    user = db.relationship('User', backref='comments')
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -208,9 +217,68 @@ def handle_movies():
             'description': m.description,
             'poster': m.poster,
             'duration': m.duration,
-            'category': {'id': m.category.id, 'name': m.category.name} if m.category else None
+            'category': {'id': m.category.id, 'name': m.category.name} if m.category else None,
+            'comments': [
+                {
+                    'id': c.id,
+                    'text': c.text,
+                    'created_at': c.created_at.isoformat() if c.created_at else None,
+                    'user': {
+                        'id': c.user.id if c.user else 0,
+                        'username': c.user.username if c.user else 'Admin',
+                        'avatar': c.user.avatar if c.user else '👑'
+                    }
+                } for c in sorted(m.comments, key=lambda c: c.created_at)
+            ]
         })
     return jsonify(result)
+
+@app.route('/api/movies/<int:movie_id>/comments', methods=['GET', 'POST'])
+def handle_movie_comments(movie_id):
+    movie = Movie.query.get(movie_id)
+    if not movie:
+        return jsonify({'message': 'Pelikula ez da aurkitzen'}), 404
+
+    if request.method == 'GET':
+        return jsonify([
+            {
+                'id': c.id,
+                'text': c.text,
+                'created_at': c.created_at.isoformat() if c.created_at else None,
+                'user': {
+                    'id': c.user.id if c.user else 0,
+                    'username': c.user.username if c.user else 'Admin',
+                    'avatar': c.user.avatar if c.user else '👑'
+                }
+            } for c in sorted(movie.comments, key=lambda c: c.created_at)
+        ])
+
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({'message': 'Token beharrezkoa da'}), 401
+    try:
+        data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    except:
+        return jsonify({'message': 'Token okerra'}), 401
+
+    text = request.get_json().get('text', '').strip()
+    if not text:
+        return jsonify({'message': 'Iruzkin bat beharrezkoa da'}), 400
+
+    comment_user_id = None if data['user_id'] == 0 else data['user_id']
+    new_comment = Comment(text=text, movie_id=movie_id, user_id=comment_user_id)
+    db.session.add(new_comment)
+    db.session.commit()
+    return jsonify({
+        'id': new_comment.id,
+        'text': new_comment.text,
+        'created_at': new_comment.created_at.isoformat(),
+        'user': {
+            'id': new_comment.user.id if new_comment.user else 0,
+            'username': new_comment.user.username if new_comment.user else 'Admin',
+            'avatar': new_comment.user.avatar if new_comment.user else '👑'
+        }
+    }), 201
 
 @app.route('/api/movies/<int:id>', methods=['DELETE', 'PUT'])
 def delete_movie(id):

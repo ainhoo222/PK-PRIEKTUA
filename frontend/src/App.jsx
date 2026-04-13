@@ -63,10 +63,27 @@ function App() {
   const [previewMovie, setPreviewMovie] = useState(null)
   const [languageSelectionMovie, setLanguageSelectionMovie] = useState(null)
   const [selectedLanguage, setSelectedLanguage] = useState('')
+  const [selectedCommentMovie, setSelectedCommentMovie] = useState(null)
+  const [commentText, setCommentText] = useState('')
+  const [commentMessage, setCommentMessage] = useState('')
 
   const openPreview = (movie) => {
     setLanguageSelectionMovie(movie)
     setSelectedLanguage('')
+  }
+
+  const openCommentModal = async (movie) => {
+    const latestMovies = await fetchMovies()
+    const targetMovie = latestMovies.find(m => m.id === movie.id) || movie
+    setSelectedCommentMovie(targetMovie)
+    setCommentMessage('')
+    setCommentText('')
+  }
+
+  const closeCommentModal = () => {
+    setSelectedCommentMovie(null)
+    setCommentText('')
+    setCommentMessage('')
   }
 
   const confirmLanguageAndPreview = () => {
@@ -81,11 +98,15 @@ function App() {
   const closePreview = () => {
     setPreviewMovie(null)
     setSelectedLanguage('')
+    setCommentText('')
+    setCommentMessage('')
   }
 
   const closeLanguageSelection = () => {
     setLanguageSelectionMovie(null)
     setSelectedLanguage('')
+    setCommentText('')
+    setCommentMessage('')
   }
 
   const toggleSeenMovie = (movieId) => {
@@ -109,7 +130,8 @@ function App() {
       const res = await axios.get('http://localhost:5000/api/movies')
       const uniqueMovies = Array.from(new Map(res.data.map(movie => [movie.id, movie])).values())
       setMovies(uniqueMovies)
-    } catch (e) { console.error(e) }
+      return uniqueMovies
+    } catch (e) { console.error(e); return [] }
   }
 
   const fetchFavorites = async () => {
@@ -240,6 +262,26 @@ function App() {
       await axios.delete(`http://localhost:5000/api/favorites/${movieId}`, { headers: { Authorization: token } })
       fetchFavorites()
     } catch (e) { console.error(e) }
+  }
+
+  const handleAddComment = async (movieId) => {
+    if (!commentText.trim()) {
+      setCommentMessage('❌ Mesedez, idatzi zure iruzkina')
+      return
+    }
+    try {
+      await axios.post(`http://localhost:5000/api/movies/${movieId}/comments`, { text: commentText }, { headers: { Authorization: token } })
+      setCommentText('')
+      setCommentMessage('✅ Iruzkin gehitu da!')
+      const updatedMovies = await fetchMovies()
+      const updatedMovie = updatedMovies.find(m => m.id === movieId)
+      if (updatedMovie) {
+        setSelectedCommentMovie(updatedMovie)
+      }
+    } catch (e) {
+      const errorMsg = e.response?.data?.message || 'Errorea iruzkin bat gehitzean'
+      setCommentMessage('❌ ' + errorMsg)
+    }
   }
 
   const handleLogout = () => {
@@ -593,6 +635,11 @@ function App() {
                         <h3>{m.title}</h3>
                         <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
                         <p className="movie-duration">{m.duration} min ({getDurationCategory(m.duration)})</p>
+                      <div className="movie-comment-actions">
+                        <button type="button" className="comment-action-btn" onClick={() => openCommentModal(m)}>
+                          Komentarioak
+                        </button>
+                      </div>
                       </div>
                       {role === 'admin' && (
                         <div className="admin-buttons">
@@ -677,6 +724,50 @@ function App() {
                   </div>
                 </div>
                 <button className="close-preview-btn" onClick={closePreview}>Itxi</button>
+              </div>
+            </div>
+          )}
+
+          {selectedCommentMovie && (
+            <div className="comments-modal" role="dialog" aria-modal="true">
+              <div className="preview-backdrop" onClick={closeCommentModal}></div>
+              <div className="preview-box">
+                <div className="preview-screen">
+                  <h2>Komentarioak</h2>
+                  <p style={{ color: '#ddd', marginTop: '10px' }}>
+                    {selectedCommentMovie.title}
+                  </p>
+                  <div className="comment-list">
+                    {selectedCommentMovie.comments?.length > 0 ? selectedCommentMovie.comments.map(comment => (
+                      <div key={comment.id} className="comment-item">
+                        <span className="comment-avatar">{comment.user.avatar || '👤'}</span>
+                        <div>
+                          <p className="comment-author">{comment.user.username}</p>
+                          <p className="comment-text">{comment.text}</p>
+                        </div>
+                      </div>
+                    )) : (
+                      <p className="comment-empty">Oraindik ez dago iruzkinik.</p>
+                    )}
+                  </div>
+                  <textarea
+                    placeholder="Idatzi zure iruzkina hemen..."
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    rows="4"
+                  />
+                  <div className="comment-submit-row">
+                    {commentMessage && (
+                      <div className={`profile-message ${commentMessage.includes('❌') ? 'error' : 'success'}`}>
+                        {commentMessage}
+                      </div>
+                    )}
+                    <button type="button" className="save-btn" onClick={() => handleAddComment(selectedCommentMovie.id)}>
+                      Bidali
+                    </button>
+                  </div>
+                </div>
+                <button className="close-preview-btn" onClick={closeCommentModal}>Itxi</button>
               </div>
             </div>
           )}
