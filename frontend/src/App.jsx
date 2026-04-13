@@ -12,15 +12,24 @@ function App() {
   const [userData, setUserData] = useState({})
   const [movies, setMovies] = useState([])
   const [favorites, setFavorites] = useState([])
-  const [newMovie, setNewMovie] = useState({ title: '', description: '', category_id: '' })
+  const [newMovie, setNewMovie] = useState({ title: '', description: '', poster: '', posterFile: null, duration: '', category_id: '' })
   const [searchTerm, setSearchTerm] = useState('')
   const [categories, setCategories] = useState([])
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [selectedDuration, setSelectedDuration] = useState('')
+  const [seenMovieIds, setSeenMovieIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('seenMovieIds')) || []
+    } catch {
+      return []
+    }
+  })
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [editFormData, setEditFormData] = useState({ username: '', email: '', password: '', avatar: '' })
   const [profileMessage, setProfileMessage] = useState('')
   const [editingMovie, setEditingMovie] = useState(null)
-  const [editMovieForm, setEditMovieForm] = useState({ title: '', description: '', poster: '' })
+  const [editMovieForm, setEditMovieForm] = useState({ title: '', description: '', poster: '', duration: '' })
   
   const AVATAR_OPTIONS = ['👤', '😊', '😎', '🎨', '📚', '⭐', '🎭', '🚀', '💻', '🎮', '🏆', '🌟']
 
@@ -43,12 +52,50 @@ function App() {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
   }
 
-  const getMoviePoster = (movie) => movie.poster || getFallbackPoster(movie.title)
+  const getMoviePoster = (movie) => {
+    if (movie.poster && movie.poster.startsWith('/uploads/')) {
+      return `http://localhost:5000${movie.poster}`
+    }
+    return movie.poster || getFallbackPoster(movie.title)
+  }
   const isFavoriteMovie = (movieId) => favorites.some(fav => fav.id === movieId)
+  const isSeenMovie = (movieId) => seenMovieIds.includes(movieId)
   const [previewMovie, setPreviewMovie] = useState(null)
+  const [languageSelectionMovie, setLanguageSelectionMovie] = useState(null)
+  const [selectedLanguage, setSelectedLanguage] = useState('')
 
-  const openPreview = (movie) => setPreviewMovie(movie)
-  const closePreview = () => setPreviewMovie(null)
+  const openPreview = (movie) => {
+    setLanguageSelectionMovie(movie)
+    setSelectedLanguage('')
+  }
+
+  const confirmLanguageAndPreview = () => {
+    if (!selectedLanguage) {
+      alert('Mesedez, hautatu hizkuntza bat lehenengo.')
+      return
+    }
+    setPreviewMovie(languageSelectionMovie)
+    setLanguageSelectionMovie(null)
+  }
+
+  const closePreview = () => {
+    setPreviewMovie(null)
+    setSelectedLanguage('')
+  }
+
+  const closeLanguageSelection = () => {
+    setLanguageSelectionMovie(null)
+    setSelectedLanguage('')
+  }
+
+  const toggleSeenMovie = (movieId) => {
+    const updatedIds = isSeenMovie(movieId)
+      ? seenMovieIds.filter(id => id !== movieId)
+      : [...seenMovieIds, movieId]
+
+    setSeenMovieIds(updatedIds)
+    localStorage.setItem('seenMovieIds', JSON.stringify(updatedIds))
+  }
 
   const fetchProfile = async () => {
     try {
@@ -89,7 +136,7 @@ function App() {
   }, [token])
 
   useEffect(() => {
-    if (token && currentView === 'movies') {
+    if (token && (currentView === 'movies' || currentView === 'seen')) {
       fetchMovies()
     }
   }, [currentView, token])
@@ -123,12 +170,23 @@ function App() {
   const handleAddMovie = async (e) => {
     e.preventDefault()
     try {
-      await axios.post('http://localhost:5000/api/movies', {
-        title: newMovie.title,
-        description: newMovie.description,
-        category_id: newMovie.category_id
+      const formData = new FormData()
+      formData.append('title', newMovie.title)
+      formData.append('description', newMovie.description)
+      formData.append('category_id', newMovie.category_id)
+      formData.append('duration', newMovie.duration)
+      if (newMovie.poster) {
+        formData.append('poster', newMovie.poster)
+      }
+      if (newMovie.posterFile) {
+        formData.append('poster_file', newMovie.posterFile)
+      }
+      await axios.post('http://localhost:5000/api/movies', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
-      setNewMovie({ title: '', description: '', category_id: '' })
+      setNewMovie({ title: '', description: '', poster: '', posterFile: null, duration: '', category_id: '' })
       fetchMovies()
       setMessage('Filma ongi gehitu da!')
     } catch (e) { console.error(e) }
@@ -143,7 +201,7 @@ function App() {
 
   const handleEditMovie = (movie) => {
     setEditingMovie(movie)
-    setEditMovieForm({ title: movie.title, description: movie.description, poster: movie.poster || '' })
+    setEditMovieForm({ title: movie.title, description: movie.description, poster: movie.poster || '', duration: movie.duration || 120 })
   }
 
   const handleSaveEditMovie = async () => {
@@ -167,6 +225,14 @@ function App() {
       await axios.post('http://localhost:5000/api/favorites', { movie_id: movieId }, { headers: { Authorization: token } })
       fetchFavorites(); alert("Gogokoetara gehituta!")
     } catch (e) { console.error(e) }
+  }
+
+  const toggleFavorite = async (movieId) => {
+    if (isFavoriteMovie(movieId)) {
+      await handleRemoveFavorite(movieId)
+    } else {
+      await handleAddFavorite(movieId)
+    }
   }
 
   const handleRemoveFavorite = async (movieId) => {
@@ -230,6 +296,18 @@ function App() {
     }
   }
 
+  const getDurationCategory = (minutes) => {
+    if (!minutes || minutes < 1) return 'Denbora ez'
+    if (minutes < 90) return 'Laburra'
+    if (minutes <= 120) return 'Ertaina'
+    return 'Luzea'
+  }
+
+  const filteredMovies = movies
+    .filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(m => selectedCategoryId === '' || String(m.category?.id || '') === selectedCategoryId)
+    .filter(m => selectedDuration === '' || (m.duration && getDurationCategory(m.duration) === selectedDuration))
+
   const handleRegister = async (e) => {
     e.preventDefault()
     
@@ -280,7 +358,8 @@ function App() {
       <div className="app app-logged">
         <div className="navbar">
           <button onClick={() => setCurrentView('profile')}>Profila</button>
-          <button onClick={() => { fetchMovies(); setCurrentView('movies') }}>Filmak</button>
+          <button onClick={() => { fetchMovies(); setSelectedCategoryId(''); setSearchTerm(''); setCurrentView('movies') }}>Filmak</button>
+          <button onClick={() => { fetchMovies(); setCurrentView('seen') }}>Ikusitakoak</button>
           <button onClick={() => {fetchFavorites(); setCurrentView('favorites')}}>Gogokoenak</button>
         </div>
 
@@ -416,9 +495,12 @@ function App() {
                   {/* Pelikula gehitzeko kutxa */}
                   <div className="admin-box">
                     <h3>Gehitu Filma</h3>
-                    <form onSubmit={handleAddMovie}>
+                    <form onSubmit={handleAddMovie} encType="multipart/form-data">
                       <input type="text" placeholder="Izenburua" value={newMovie.title} onChange={(e)=>setNewMovie({...newMovie, title: e.target.value})} required />
                       <textarea placeholder="Deskribapena" value={newMovie.description} onChange={(e)=>setNewMovie({...newMovie, description: e.target.value})} />
+                      <input type="number" placeholder="Iraupena (minutuak) (aukerakoa)" value={newMovie.duration} onChange={(e)=>setNewMovie({...newMovie, duration: e.target.value})} min="1" />
+                      <input type="url" placeholder="Poster URLa (aukerakoa)" value={newMovie.poster} onChange={(e)=>setNewMovie({...newMovie, poster: e.target.value})} />
+                      <input type="file" accept="image/*" onChange={(e)=>setNewMovie({...newMovie, posterFile: e.target.files[0]})} />
                       <select value={newMovie.category_id} onChange={(e)=>setNewMovie({...newMovie, category_id: e.target.value})} required>
                         <option value="">Hautatu kategoria</option>
                         {categories.map(cat => (
@@ -431,68 +513,150 @@ function App() {
                 </>
               )}
 
-              <div className="search-container">
-                <input type="text" placeholder="Bilatu pelikula..." onChange={(e)=>setSearchTerm(e.target.value)} className="search-bar" />
+              <div className="search-filter-row">
+                <input
+                  type="text"
+                  placeholder="Bilatu pelikula..."
+                  value={searchTerm}
+                  onChange={(e)=>setSearchTerm(e.target.value)}
+                  className="search-bar"
+                />
+                <select
+                  className="category-filter"
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                >
+                  <option value="">Kategoria guztiak</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <select
+                  className="category-filter"
+                  value={selectedDuration}
+                  onChange={(e) => setSelectedDuration(e.target.value)}
+                >
+                  <option value="">Iraupena guztiak</option>
+                  <option value="Laburra">Laburra (&lt;90 min)</option>
+                  <option value="Ertaina">Ertaina (90-120 min)</option>
+                  <option value="Luzea">Luzea (&gt;120 min)</option>
+                </select>
               </div>
 
-              {movies.length === 0 ? (
+              {filteredMovies.length === 0 ? (
                 <div className="empty-state">
-                  <p>Ez daukazu pelikularik oraindik. Admin bat bazara, gehitu lehenengoa!</p>
+                  <p>Ez da pelikularik aurkitu bilaketaren edo kategoria hautapenaren arabera.</p>
                 </div>
               ) : (
-                Object.entries(groupMoviesByCategory(
-                  movies.filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase()))
-                )).map(([categoryName, movieList]) => (
-                  <div key={categoryName}>
-                    <h2 style={{ marginLeft: '30px', color: '#000080' }}>{categoryName}</h2>
-                    <div className="movies-grid">
-                              {movieList.map(m => (
-                          <div key={m.id} className="movie-card">
-                            <div className="movie-poster">
-                              <img
-                              src={getMoviePoster(m)}
-                                alt={`${m.title} poster`}
-                                onError={(e) => {
-                                  e.target.onerror = null
-                                  e.target.src = getFallbackPoster(m.title)
-                                }}
-                                onClick={() => openPreview(m)}
-                                style={{ cursor: 'pointer' }}
-                              />
-                              <div className="movie-overlay">
-                                <button
-                                  onClick={() => handleAddFavorite(m.id)}
-                                  className={`movie-favorite-btn ${isFavoriteMovie(m.id) ? 'active' : ''}`}
-                                  type="button"
-                                  aria-label={isFavoriteMovie(m.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                                >
-                                  {isFavoriteMovie(m.id) ? '★' : '☆'}
-                                </button>
-                                <div className="movie-overlay-body">
-                                  <div className="movie-description">{m.description}</div>
-                                </div>
-                                <button type="button" className="watch-btn overlay-watch-btn" onClick={() => openPreview(m)}>
-                                  Ikusi
-                                </button>
-                              </div>
-                              {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
-                            </div>
-                            <div className="movie-info">
-                              <h3>{m.title}</h3>
-                              <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
-                            </div>
-                            {role === 'admin' && (
-                              <div className="admin-buttons">
-                                <button onClick={() => handleEditMovie(m)} className="edit-btn">Editatu</button>
-                                <button onClick={() => handleDeleteMovie(m.id)} className="delete-btn">Ezabatu</button>
-                              </div>
-                            )}
+                <div className="movies-grid">
+                  {filteredMovies.map(m => (
+                    <div key={m.id} className="movie-card">
+                      <div className="movie-poster">
+                        <img
+                          src={getMoviePoster(m)}
+                          alt={`${m.title} poster`}
+                          onError={(e) => {
+                            e.target.onerror = null
+                            e.target.src = getFallbackPoster(m.title)
+                          }}
+                          onClick={() => openPreview(m)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <div className="movie-overlay">
+                          <button
+                            onClick={() => toggleFavorite(m.id)}
+                            className={`movie-favorite-btn ${isFavoriteMovie(m.id) ? 'active' : ''}`}
+                            type="button"
+                            aria-label={isFavoriteMovie(m.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                          >
+                            {isFavoriteMovie(m.id) ? '★' : '☆'}
+                          </button>
+                          <button
+                            onClick={() => toggleSeenMovie(m.id)}
+                            className={`movie-seen-btn ${isSeenMovie(m.id) ? 'active' : ''}`}
+                            type="button"
+                            aria-label={isSeenMovie(m.id) ? 'Marcar como no visto' : 'Marcar como visto'}
+                          >
+                            👁️
+                          </button>
+                          <div className="movie-overlay-body">
+                            <div className="movie-description">{m.description}</div>
                           </div>
-                        ))}
+                          <button type="button" className="watch-btn overlay-watch-btn" onClick={() => openPreview(m)}>
+                            Ikusi
+                          </button>
+                        </div>
+                        {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
+                        {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusitakoa</div>}
+                      </div>
+                      <div className="movie-info">
+                        <h3>{m.title}</h3>
+                        <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
+                        <p className="movie-duration">{m.duration} min ({getDurationCategory(m.duration)})</p>
+                      </div>
+                      {role === 'admin' && (
+                        <div className="admin-buttons">
+                          <button onClick={() => handleEditMovie(m)} className="edit-btn">Editatu</button>
+                          <button onClick={() => handleDeleteMovie(m.id)} className="delete-btn">Ezabatu</button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
+            </div>
+          )}
+
+          {languageSelectionMovie && (
+            <div className="preview-modal" role="dialog" aria-modal="true">
+              <div className="preview-backdrop" onClick={closeLanguageSelection}></div>
+              <div className="preview-box">
+                <div className="preview-screen">
+                  <h2>Hautatu hizkuntza</h2>
+                  <p style={{ color: '#ddd', marginTop: '12px' }}>
+                    {languageSelectionMovie.title} ikusteko, aukeratu hizkuntza bat.
+                  </p>
+                  <div className="language-options">
+                    <button
+                      type="button"
+                      className={`language-select-btn ${selectedLanguage === 'euskera' ? 'selected' : ''}`}
+                      onClick={() => setSelectedLanguage('euskera')}
+                    >
+                      Euskera
+                    </button>
+                    <button
+                      type="button"
+                      className={`language-select-btn ${selectedLanguage === 'castellano' ? 'selected' : ''}`}
+                      onClick={() => setSelectedLanguage('castellano')}
+                    >
+                      Castellano
+                    </button>
+                    <button
+                      type="button"
+                      className={`language-select-btn ${selectedLanguage === 'ingles' ? 'selected' : ''}`}
+                      onClick={() => setSelectedLanguage('ingles')}
+                    >
+                      Ingles
+                    </button>
+                  </div>
+                </div>
+                <div className="edit-buttons" style={{ justifyContent: 'center', gap: '14px' }}>
+                  <button
+                    type="button"
+                    className="save-btn"
+                    onClick={confirmLanguageAndPreview}
+                  >
+                    Ikusi
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={closeLanguageSelection}
+                  >
+                    Itxi
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -502,6 +666,9 @@ function App() {
               <div className="preview-box">
                 <div className="preview-screen">
                   <h2>Ikusi: {previewMovie.title}</h2>
+                  <p style={{ color: '#ddd', marginTop: '10px' }}>
+                    Hautatutako hizkuntza: {selectedLanguage === 'euskera' ? 'Euskera' : selectedLanguage === 'castellano' ? 'Castellano' : 'Ingles'}
+                  </p>
                   <div className="preview-screen-window">
                     <div className="preview-screen-content">
                       <span>▶</span>
@@ -545,6 +712,15 @@ function App() {
                       placeholder="https://..."
                     />
                   </div>
+                  <div className="form-group">
+                    <label>Iraupena (minutuak):</label>
+                    <input
+                      type="number"
+                      value={editMovieForm.duration}
+                      onChange={(e) => setEditMovieForm({ ...editMovieForm, duration: e.target.value })}
+                      min="1"
+                    />
+                  </div>
                   <div className="edit-buttons">
                     <button type="submit" className="save-btn">Gorde</button>
                     <button type="button" onClick={handleCancelEdit} className="cancel-btn">Utzi</button>
@@ -578,14 +754,68 @@ function App() {
                         <div className="movie-info">
                           <h3>{m.title}</h3>
                           <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
+                          <p className="movie-duration">{m.duration} min ({getDurationCategory(m.duration)})</p>
                         </div>
-                        <button onClick={() => handleRemoveFavorite(m.id)} className="remove-fav-btn">❌ Kendu</button>
+                        <div className="card-buttons">
+                          <button onClick={() => handleRemoveFavorite(m.id)} className="remove-fav-btn">❌ Kendu</button>
+                          <button onClick={() => toggleSeenMovie(m.id)} className={`movie-seen-btn ${isSeenMovie(m.id) ? 'active' : ''}`}>{isSeenMovie(m.id) ? '👁️ Ikusita' : '👁️ Ikusi'}</button>
+                        </div>
+                        {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusitakoa</div>}
+                        {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
                       </div>
                     ))}
                   </div>
                 </div>
               ))}
               {favorites.length === 0 && <p>Hutsa... Gehitu pelikulak!</p>}
+            </div>
+          )}
+          {currentView === 'seen' && (
+            <div className="seen">
+              <h2>Ikusitakoak</h2>
+              {seenMovieIds.length === 0 ? (
+                <p>Oraindik ez duzu pelikularik ikusi.</p>
+              ) : (
+                Object.entries(groupMoviesByCategory(
+                  movies.filter(m => seenMovieIds.includes(m.id))
+                )).map(([catName, seenList]) => (
+                  <div key={catName}>
+                    <h3 style={{ marginLeft: '30px', color: '#000080' }}>{catName}</h3>
+                    <div className="movies-grid">
+                      {seenList.map(m => (
+                        <div key={m.id} className="movie-card">
+                          <div className="movie-poster">
+                            <img
+                              src={getMoviePoster(m)}
+                              alt={`${m.title} poster`}
+                              onError={(e) => {
+                                e.target.onerror = null
+                                e.target.src = getFallbackPoster(m.title)
+                              }}
+                            />
+                            <div className="movie-overlay movie-overlay-favorite">
+                              <div className="movie-description">{m.description}</div>
+                            </div>
+                          </div>
+                          <div className="movie-info">
+                            <h3>{m.title}</h3>
+                            <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
+                            <p className="movie-duration">{m.duration} min ({getDurationCategory(m.duration)})</p>
+                          </div>
+                          <div className="card-buttons">
+                            <button onClick={() => toggleSeenMovie(m.id)} className="remove-fav-btn">👁️ Kendu</button>
+                            <button onClick={() => toggleFavorite(m.id)} className={`movie-favorite-btn ${isFavoriteMovie(m.id) ? 'active' : ''}`} type="button" aria-label={isFavoriteMovie(m.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}>
+                              {isFavoriteMovie(m.id) ? '★' : '☆'}
+                            </button>
+                          </div>
+                          {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusitakoa</div>}
+                          {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
         </div>

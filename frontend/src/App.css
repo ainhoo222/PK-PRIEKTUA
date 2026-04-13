@@ -199,11 +199,20 @@ body {
 }
 
 
+.search-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin: 25px auto;
+  max-width: 900px;
+}
+
 .search-bar {
   display: block;
-  width: 90%;
-  max-width: 600px;
-  margin: 25px auto;
+  width: 100%;
+  max-width: 500px;
   padding: 12px 25px;
   border: 2px solid #D8BFD8;
   border-radius: 30px;
@@ -212,6 +221,24 @@ body {
   color: #000080;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+}
+
+.category-filter {
+  width: 220px;
+  padding: 12px 16px;
+  border: 2px solid #D8BFD8;
+  border-radius: 30px;
+  font-size: 16px;
+  background: white;
+  color: #000080;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.category-filter:focus {
+  outline: none;
+  border-color: #000080;
+  box-shadow: 0 4px 20px rgba(0, 0, 128, 0.2);
 }
 
 .search-bar:focus {
@@ -371,6 +398,37 @@ body {
   background: rgba(255, 255, 255, 0.95);
   color: #ff5f5f;
   border-color: rgba(255, 255, 255, 1);
+  z-index: 3;
+}
+
+.movie-seen-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.2s ease;
+  z-index: 2;
+}
+
+.movie-seen-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.05);
+}
+
+.movie-seen-btn.active {
+  background: rgba(255, 255, 255, 0.95);
+  color: #000080;
+  border-color: rgba(255, 255, 255, 1);
 }
 
 .movie-overlay-body {
@@ -382,13 +440,22 @@ body {
 }
 
 .movie-description {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: white;
   font-size: 1.05rem;
   line-height: 1.8;
-  max-height: 220px;
+  max-height: 320px;
   overflow: auto;
-  padding-right: 10px;
-  margin: 0;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  z-index: 3;
+  max-width: 90%;
+  text-align: center;
 }
 
 .movie-actions {
@@ -508,18 +575,34 @@ body {
   font-size: 1rem;
   transition: background 0.3s ease;
 }
-  margin-top: 24px;
-  background: #ff5f5f;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-weight: bold;
-  cursor: pointer;
-}
 
 .close-preview-btn:hover {
   background: #ff7f7f;
+}
+
+.language-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.language-select-btn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.language-select-btn:hover,
+.language-select-btn.selected {
+  background: #000080;
+  border-color: #000080;
 }
 
 .movie-info {
@@ -547,18 +630,48 @@ body {
   font-size: 0.95rem;
 }
 
+.movie-duration {
+  color: #888;
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 .poster-badge {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 56px;
+  left: 12px;
   background: rgba(255, 255, 255, 0.92);
   color: #000080;
-  padding: 8px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 0.9rem;
-  z-index: 2;
+  font-size: 0.82rem;
+  z-index: 1;
+  pointer-events: none;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.18);
+}
+
+.seen-badge {
+  position: absolute;
+  top: 60px;
+  left: 250px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(255, 255, 255, 0.95);
+  color: #000080;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
 }
 
 .card-buttons {
