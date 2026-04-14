@@ -63,8 +63,6 @@ class Comment(db.Model):
 def register():
     try:
         data = request.get_json()
-        
-        # Validar campos requeridos
         username = data.get('username', '').strip()
         email = data.get('email', '').strip()
         password = data.get('password', '').strip()
@@ -75,21 +73,17 @@ def register():
             return jsonify({'message': 'Emaila beharrezkoa'}), 400
         if not password:
             return jsonify({'message': 'Pasahitza beharrezkoa'}), 400
-        
-        # Validar email básico
+
         if '@' not in email:
             return jsonify({'message': 'Email ez da baliozkoa'}), 400
-        
-        # Validar que el usuario no exista
+      
         if User.query.filter_by(username=username).first():
             return jsonify({'message': 'Erabiltzailea existitzen da'}), 400
         
-        # Validar que el email no exista
         if User.query.filter_by(email=email).first():
             return jsonify({'message': 'Email hau erregistratuta dago'}), 400
         
         hashed = generate_password_hash(password)
-        # Detectar si está intentando registrarse como admin
         role = 'admin' if (username == 'Admin' and password == 'Admin') else 'user'
         new_user = User(username=username, email=email, password_hash=hashed, role=role)
         db.session.add(new_user)
@@ -117,9 +111,9 @@ def get_profile():
     try:
         data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
         if data['user_id'] == 0:
-            return jsonify({'username': 'Admin', 'email': 'admin@streamix.com', 'role': 'admin', 'avatar': '👑'}), 200
+            return jsonify({'id': 0, 'username': 'Admin', 'email': 'admin@streamix.com', 'role': 'admin', 'avatar': '👑'}), 200
         user = User.query.get(data['user_id'])
-        return jsonify({'username': user.username, 'email': user.email, 'role': user.role, 'avatar': user.avatar}), 200
+        return jsonify({'id': user.id, 'username': user.username, 'email': user.email, 'role': user.role, 'avatar': user.avatar}), 200
     except:
         return jsonify({'message': 'Token okerra'}), 401
 
@@ -137,7 +131,6 @@ def update_profile():
         
         update_data = request.get_json()
         
-        # Actualizar username si se proporciona
         if 'username' in update_data and update_data['username'].strip():
             new_username = update_data['username'].strip()
             if new_username != user.username:
@@ -145,7 +138,6 @@ def update_profile():
                     return jsonify({'message': 'Baina erabiltzailea dagoeneko erregistratuta dago'}), 400
                 user.username = new_username
         
-        # Actualizar email si se proporciona
         if 'email' in update_data and update_data['email'].strip():
             new_email = update_data['email'].strip()
             if '@' not in new_email:
@@ -154,15 +146,13 @@ def update_profile():
                 if User.query.filter_by(email=new_email).first():
                     return jsonify({'message': 'Email hau dagoeneko erregistratuta dago'}), 400
                 user.email = new_email
-        
-        # Actualizar contraseña si se proporciona
+       
         if 'password' in update_data and update_data['password'].strip():
             new_password = update_data['password'].strip()
             if len(new_password) < 4:
                 return jsonify({'message': 'Pasahitza gutxienez 4 karaktere izan behar du'}), 400
             user.password_hash = generate_password_hash(new_password)
         
-        # Actualizar avatar si se proporciona
         if 'avatar' in update_data and update_data['avatar'].strip():
             user.avatar = update_data['avatar'].strip()
         
@@ -290,13 +280,13 @@ def delete_comment(comment_id):
     except:
         return jsonify({'message': 'Token okerra'}), 401
     
-    # Verificar que es admin
-    if data.get('role') != 'admin':
-        return jsonify({'message': 'Admin bakarrik iruzkinak ezabatu daitezke'}), 403
-    
     comment = Comment.query.get(comment_id)
     if not comment:
         return jsonify({'message': 'Iruzkin hau ez da aurkitzen'}), 404
+    
+    # Verificar que es admin o el autor del comentario
+    if data.get('role') != 'admin' and comment.user_id != data.get('user_id'):
+        return jsonify({'message': 'Ez duzu baimenik iruzkin hau ezabatzeko'}), 403
     
     db.session.delete(comment)
     db.session.commit()
