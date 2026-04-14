@@ -285,10 +285,6 @@ function App() {
   }
 
   const handleDeleteComment = async (commentId, movieId) => {
-    if (role !== 'admin') {
-      setCommentMessage('❌ Admin bakarrik iruzkinak ezabatu daitezke')
-      return
-    }
     if (!window.confirm('Ziur zaude iruzkin hau guztiz ezabatu nahi duzula?')) {
       return
     }
@@ -767,7 +763,7 @@ function App() {
                           <p className="comment-author">{comment.user.username}</p>
                           <p className="comment-text">{comment.text}</p>
                         </div>
-                        {role === 'admin' && (
+                        {(role === 'admin' || comment.user.id === userData.id) && (
                           <button 
                             className="delete-comment-btn" 
                             onClick={() => handleDeleteComment(comment.id, selectedCommentMovie.id)}
