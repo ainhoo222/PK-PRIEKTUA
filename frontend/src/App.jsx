@@ -284,6 +284,28 @@ function App() {
     }
   }
 
+  const handleDeleteComment = async (commentId, movieId) => {
+    if (role !== 'admin') {
+      setCommentMessage('❌ Admin bakarrik iruzkinak ezabatu daitezke')
+      return
+    }
+    if (!window.confirm('Ziur zaude iruzkin hau guztiz ezabatu nahi duzula?')) {
+      return
+    }
+    try {
+      await axios.delete(`http://localhost:5000/api/comments/${commentId}`, { headers: { Authorization: token } })
+      setCommentMessage('✅ Iruzkinak ezabatua!')
+      const updatedMovies = await fetchMovies()
+      const updatedMovie = updatedMovies.find(m => m.id === movieId)
+      if (updatedMovie) {
+        setSelectedCommentMovie(updatedMovie)
+      }
+    } catch (e) {
+      const errorMsg = e.response?.data?.message || 'Errorea iruzkinak ezabatzean'
+      setCommentMessage('❌ ' + errorMsg)
+    }
+  }
+
   const handleLogout = () => {
     setToken(''); setRole(''); localStorage.clear(); setCurrentView('profile')
   }
@@ -741,10 +763,19 @@ function App() {
                     {selectedCommentMovie.comments?.length > 0 ? selectedCommentMovie.comments.map(comment => (
                       <div key={comment.id} className="comment-item">
                         <span className="comment-avatar">{comment.user.avatar || '👤'}</span>
-                        <div>
+                        <div style={{ flex: 1 }}>
                           <p className="comment-author">{comment.user.username}</p>
                           <p className="comment-text">{comment.text}</p>
                         </div>
+                        {role === 'admin' && (
+                          <button 
+                            className="delete-comment-btn" 
+                            onClick={() => handleDeleteComment(comment.id, selectedCommentMovie.id)}
+                            title="Iruzkinak ezabatu"
+                          >
+                            🗑️
+                          </button>
+                        )}
                       </div>
                     )) : (
                       <p className="comment-empty">Oraindik ez dago iruzkinik.</p>
