@@ -280,6 +280,28 @@ def handle_movie_comments(movie_id):
         }
     }), 201
 
+@app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
+def delete_comment(comment_id):
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({'message': 'Token beharrezkoa da'}), 401
+    try:
+        data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    except:
+        return jsonify({'message': 'Token okerra'}), 401
+    
+    # Verificar que es admin
+    if data.get('role') != 'admin':
+        return jsonify({'message': 'Admin bakarrik iruzkinak ezabatu daitezke'}), 403
+    
+    comment = Comment.query.get(comment_id)
+    if not comment:
+        return jsonify({'message': 'Iruzkin hau ez da aurkitzen'}), 404
+    
+    db.session.delete(comment)
+    db.session.commit()
+    return jsonify({'message': 'Iruzkinak ezabatua'}), 200
+
 @app.route('/api/movies/<int:id>', methods=['DELETE', 'PUT'])
 def delete_movie(id):
     if request.method == 'PUT':

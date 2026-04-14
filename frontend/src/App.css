@@ -597,6 +597,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   padding: 12px;
+  position: relative;
 }
 
 .comment-avatar {
@@ -625,6 +626,31 @@ body {
 .comment-empty {
   margin: 0 0 12px;
   color: #aaa;
+}
+
+.delete-comment-btn {
+  background: none;
+  border: none;
+  color: #ff4444;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.delete-comment-btn:hover {
+  background: rgba(255, 68, 68, 0.15);
+  transform: scale(1.1);
+}
+
+.delete-comment-btn:active {
+  transform: scale(0.95);
 }
 
 .comment-box textarea {
