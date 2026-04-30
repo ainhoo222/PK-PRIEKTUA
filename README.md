@@ -1,30 +1,24 @@
 # Streamix
 
-Una aplicación web para ver películas.
+Filmak ikustiko web aplikazio bat.
 
-## Tecnologías
+## Teknologiak
 - Frontend: React (Vite)
 - Backend: Python Flask
-- Base de datos: SQLite
+- Datu-basea: SQLite
 
-## Instalación y ejecución
+## Exekuzioa modu 1
+1. Ingurume birtualean sartu
+2. Terminalean: .\run.bat
+3. Nabigatzailean: http://localhost:5173/
 
+## Exekuzioa modu 2
 ### Backend
-1. Navega a la carpeta `backend`
-2. Instala las dependencias: `pip install -r requirements.txt` (o usa el entorno virtual configurado)
-3. Ejecuta: `python app.py`
+1. `backend` karpetan sartu
+2. Dependentziak instalatu: `pip install -r requirements.txt`
+3. Exekutatu: `python app.py`
 
 ### Frontend
-1. Navega a la carpeta `frontend`
-2. Instala las dependencias: `npm install`
-3. Ejecuta: `npm run dev`
-
-## Funcionalidades implementadas
-- Registro de usuarios (con opción de rol admin)
-- Login de usuarios estándar y administradores
-- Autenticación con JWT
-
-## Próximos pasos
-- Agregar gestión de películas
-- Panel de admin
-- Interfaz de usuario para ver películas
+1. `frontend` karpetan sartu
+2. Dependentziak instalatu: `npm install`
+3. Exekutatu: `npm run dev`
