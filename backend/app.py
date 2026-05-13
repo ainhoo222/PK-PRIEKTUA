@@ -335,6 +335,8 @@ def handle_favorites():
         'id': m.id,
         'title': m.title,
         'description': m.description,
+        'poster': m.poster,
+        'duration': m.duration,
         'category': {'id': m.category.id, 'name': m.category.name} if m.category else None
     } for m in movies])
 

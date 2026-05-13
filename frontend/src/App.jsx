@@ -406,7 +406,7 @@ function App() {
   const groupMoviesByCategory = (moviesList) => {
     const groups = {}
     moviesList.forEach(movie => {
-      const catName = movie.category?.name || 'Sin categoría'
+      const catName = movie.category?.name || 'Kategoria gabe'
       if (!groups[catName]) groups[catName] = []
       groups[catName].push(movie)
     })
@@ -417,14 +417,20 @@ function App() {
     return (
       <div className="app app-logged">
         <div className="navbar">
-          <button onClick={() => setCurrentView('profile')}>Profila</button>
-          <button onClick={() => { fetchMovies(); setSelectedCategoryId(''); setSearchTerm(''); setCurrentView('movies') }}>Filmak</button>
-          <button onClick={() => { fetchMovies(); setCurrentView('seen') }}>Ikusitakoak</button>
-          <button onClick={() => {fetchFavorites(); setCurrentView('favorites')}}>Gogokoenak</button>
+          <button className={currentView === 'profile' ? 'active' : ''} onClick={() => setCurrentView('profile')}>Profila</button>
+          <button className={currentView === 'movies' ? 'active' : ''} onClick={() => { fetchMovies(); setSelectedCategoryId(''); setSearchTerm(''); setCurrentView('movies') }}>Filmak</button>
+          <button className={currentView === 'seen' ? 'active' : ''} onClick={() => { fetchMovies(); setCurrentView('seen') }}>Ikusitakoak</button>
+          <button className={currentView === 'favorites' ? 'active' : ''} onClick={() => {fetchFavorites(); setCurrentView('favorites')}}>Gogokoenak</button>
         </div>
 
         <div className="content">
-          {currentView === 'profile' && (
+          <header className="app-header">
+            <div className="brand">
+              <h1 className="brand-title">Streamix</h1>
+            </div>
+          </header>
+
+            {currentView === 'profile' && (
             <div className="profile-container">
               <div className="profile-card">
                 <div className="profile-header">
@@ -627,7 +633,7 @@ function App() {
                             onClick={() => toggleFavorite(m.id)}
                             className={`movie-favorite-btn ${isFavoriteMovie(m.id) ? 'active' : ''}`}
                             type="button"
-                            aria-label={isFavoriteMovie(m.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                            aria-label={isFavoriteMovie(m.id) ? 'Gogokoetatik kendu' : 'Gogokoetara gehitu'}
                           >
                             {isFavoriteMovie(m.id) ? '★' : '☆'}
                           </button>
@@ -635,7 +641,7 @@ function App() {
                             onClick={() => toggleSeenMovie(m.id)}
                             className={`movie-seen-btn ${isSeenMovie(m.id) ? 'active' : ''}`}
                             type="button"
-                            aria-label={isSeenMovie(m.id) ? 'Marcar como no visto' : 'Marcar como visto'}
+                            aria-label={isSeenMovie(m.id) ? 'Ikusitako ezabatu' : 'Ikusitako moduan markatu'}
                           >
                             👁️
                           </button>
@@ -646,12 +652,12 @@ function App() {
                             Ikusi
                           </button>
                         </div>
+                        {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusita</div>}
                         {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
-                        {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusitakoa</div>}
                       </div>
                       <div className="movie-info">
                         <h3>{m.title}</h3>
-                        <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
+                        <p className="movie-category">{m.category?.name || 'Kategoria gabe'}</p>
                         <p className="movie-duration">{m.duration} min ({getDurationCategory(m.duration)})</p>
                       <div className="movie-comment-actions">
                         <button type="button" className="comment-action-btn" onClick={() => openCommentModal(m)}>
@@ -858,28 +864,47 @@ function App() {
                       <div key={m.id} className="movie-card">
                         <div className="movie-poster">
                           <img
-                          src={getMoviePoster(m)}
+                            src={getMoviePoster(m)}
                             alt={`${m.title} poster`}
                             onError={(e) => {
                               e.target.onerror = null
                               e.target.src = getFallbackPoster(m.title)
                             }}
+                            onClick={() => openPreview(m)}
+                            style={{ cursor: 'pointer' }}
                           />
-                          <div className="movie-overlay movie-overlay-favorite">
-                            <div className="movie-description">{m.description}</div>
+                          <div className="movie-overlay">
+                            <button
+                              onClick={() => handleRemoveFavorite(m.id)}
+                              className="movie-favorite-btn active"
+                              type="button"
+                              title="Gogokoetatik kendu"
+                            >
+                              ★
+                            </button>
+                            <button
+                              onClick={() => toggleSeenMovie(m.id)}
+                              className={`movie-seen-btn ${isSeenMovie(m.id) ? 'active' : ''}`}
+                              type="button"
+                              aria-label={isSeenMovie(m.id) ? 'Ikusitako ezabatu' : 'Ikusitako moduan markatu'}
+                            >
+                              👁️
+                            </button>
+                            <div className="movie-overlay-body">
+                              <div className="movie-description">{m.description}</div>
+                            </div>
+                            <button type="button" className="watch-btn overlay-watch-btn" onClick={() => openPreview(m)}>
+                              Ikusi
+                            </button>
                           </div>
+                          {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusita</div>}
+                          {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
                         </div>
                         <div className="movie-info">
                           <h3>{m.title}</h3>
-                          <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
+                          <p className="movie-category">{m.category?.name || 'Kategoria gabe'}</p>
                           <p className="movie-duration">{m.duration} min ({getDurationCategory(m.duration)})</p>
                         </div>
-                        <div className="card-buttons">
-                          <button onClick={() => handleRemoveFavorite(m.id)} className="remove-fav-btn">❌ Kendu</button>
-                          <button onClick={() => toggleSeenMovie(m.id)} className={`movie-seen-btn ${isSeenMovie(m.id) ? 'active' : ''}`}>{isSeenMovie(m.id) ? '👁️ Ikusita' : '👁️ Ikusi'}</button>
-                        </div>
-                        {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusitakoa</div>}
-                        {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
                       </div>
                     ))}
                   </div>
@@ -910,24 +935,41 @@ function App() {
                                 e.target.onerror = null
                                 e.target.src = getFallbackPoster(m.title)
                               }}
+                              onClick={() => openPreview(m)}
+                              style={{ cursor: 'pointer' }}
                             />
-                            <div className="movie-overlay movie-overlay-favorite">
-                              <div className="movie-description">{m.description}</div>
+                            <div className="movie-overlay">
+                              <button
+                                onClick={() => toggleFavorite(m.id)}
+                                className={`movie-favorite-btn ${isFavoriteMovie(m.id) ? 'active' : ''}`}
+                                type="button"
+                                aria-label={isFavoriteMovie(m.id) ? 'Gogokoetatik kendu' : 'Gogokoetara gehitu'}
+                              >
+                                {isFavoriteMovie(m.id) ? '★' : '☆'}
+                              </button>
+                              <button
+                                onClick={() => toggleSeenMovie(m.id)}
+                                className="movie-seen-btn active"
+                                type="button"
+                                title="Ikusitakoetatik kendu"
+                              >
+                                👁️
+                              </button>
+                              <div className="movie-overlay-body">
+                                <div className="movie-description">{m.description}</div>
+                              </div>
+                              <button type="button" className="watch-btn overlay-watch-btn" onClick={() => openPreview(m)}>
+                                Ikusi
+                              </button>
                             </div>
+                            <div className="poster-badge seen-badge">Ikusita</div>
+                            {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
                           </div>
                           <div className="movie-info">
                             <h3>{m.title}</h3>
-                            <p className="movie-category">{m.category?.name || 'Sin categoría'}</p>
+                            <p className="movie-category">{m.category?.name || 'Kategoria gabe'}</p>
                             <p className="movie-duration">{m.duration} min ({getDurationCategory(m.duration)})</p>
                           </div>
-                          <div className="card-buttons">
-                            <button onClick={() => toggleSeenMovie(m.id)} className="remove-fav-btn">👁️ Kendu</button>
-                            <button onClick={() => toggleFavorite(m.id)} className={`movie-favorite-btn ${isFavoriteMovie(m.id) ? 'active' : ''}`} type="button" aria-label={isFavoriteMovie(m.id) ? 'Quitar de favoritos' : 'Añadir a favoritos'}>
-                              {isFavoriteMovie(m.id) ? '★' : '☆'}
-                            </button>
-                          </div>
-                          {isSeenMovie(m.id) && <div className="poster-badge seen-badge">Ikusitakoa</div>}
-                          {isFavoriteMovie(m.id) && <div className="poster-badge">Gogokoa</div>}
                         </div>
                       ))}
                     </div>
@@ -994,7 +1036,7 @@ function App() {
           color: '#333',
           lineHeight: '1.6'
         }}>
-          <strong>💡 Administradorea izateko:</strong><br/>
+          <strong>💡 Administratzaile izateko:</strong><br/>
           Erabiltzailea: <code style={{background: '#fff', padding: '2px 6px', borderRadius: '4px'}}>Admin</code><br/>
           Pasahitza: <code style={{background: '#fff', padding: '2px 6px', borderRadius: '4px'}}>Admin</code>
         </div>
